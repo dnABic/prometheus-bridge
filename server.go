@@ -24,6 +24,8 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/prometheus/prometheus/storage/remote"
+
+	"prometheus-amqp-bridge/messaging"
 )
 
 func publish(msg []byte) error {
@@ -98,6 +100,10 @@ func getMessagse() ([]byte, error) {
 }
 
 func main() {
+	stream := &messaging.RabbitMQStream{}
+	stream.Connect("amqp://guest:guest@localhost:5672/", messaging.Options{})
+	defer stream.Close()
+
 	http.HandleFunc("/receive", func(w http.ResponseWriter, r *http.Request) {
 		reqBuf, err := ioutil.ReadAll(snappy.NewReader(r.Body))
 		if err != nil {
@@ -105,7 +111,7 @@ func main() {
 			return
 		}
 
-		err = publish(reqBuf)
+		err = stream.Publish(reqBuf, &messaging.RabbitMQPublishSettings{QueueName: "metrics"})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
