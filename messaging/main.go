@@ -87,7 +87,35 @@ func (s *RabbitMQStream) Publish(msg []byte, opts interface{}) error {
 }
 
 func (s *RabbitMQStream) Consume(opts interface{}) ([]byte, error) {
-	return nil, nil
+	options, ok := opts.(*RabbitMQConsumeSettings)
+	if !ok {
+		log.Println("Wrong RabbitMQ publish settings, use *RabbitMQPublishSettings instead!")
+	}
+
+	ch, err := s.connection.Channel()
+	if err != nil {
+		return nil, err
+	}
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		options.QueueName, // name
+		false,             // durable
+		false,             // delete when unused
+		false,             // exclusive
+		false,             // no-wait
+		nil,               // arguments
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	delivery, ok, err := ch.Get(q.Name, true)
+	if ok {
+		return delivery.Body, nil
+	}
+
+	return nil, err
 }
 
 var _ Stream = (*RabbitMQStream)(nil)
