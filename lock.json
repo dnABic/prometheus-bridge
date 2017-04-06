@@ -1,0 +1,159 @@
+{
+    "memo": "4b31f6663b47da382eb42955df76d422f5bb5170be86d2a446d51ff159f460cb",
+    "projects": [
+        {
+            "name": "github.com/Sirupsen/logrus",
+            "version": "v0.11.5",
+            "revision": "ba1b36c82c5e05c4f912a88eab0dcd91a171688f",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/beorn7/perks",
+            "branch": "master",
+            "revision": "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9",
+            "packages": [
+                "quantile"
+            ]
+        },
+        {
+            "name": "github.com/golang/protobuf",
+            "revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+            "packages": [
+                "proto"
+            ]
+        },
+        {
+            "name": "github.com/golang/snappy",
+            "revision": "7db9049039a047d955fe8c19b83c8ff5abd765c7",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/matttproud/golang_protobuf_extensions",
+            "version": "v1.0.0",
+            "revision": "3247c84500bff8d9fb6d579d800f20b3e091582c",
+            "packages": [
+                "pbutil"
+            ]
+        },
+        {
+            "name": "github.com/prometheus/client_golang",
+            "version": "v0.8.0",
+            "revision": "c5b7fccd204277076155f10851dad72b76a49317",
+            "packages": [
+                "prometheus"
+            ]
+        },
+        {
+            "name": "github.com/prometheus/client_model",
+            "branch": "master",
+            "revision": "6f3806018612930941127f2a7c6c453ba2c527d2",
+            "packages": [
+                "go"
+            ]
+        },
+        {
+            "name": "github.com/prometheus/common",
+            "revision": "dd2f054febf4a6c00f2343686efb775948a8bff4",
+            "packages": [
+                "expfmt",
+                "internal/bitbucket.org/ww/goautoneg",
+                "log",
+                "model"
+            ]
+        },
+        {
+            "name": "github.com/prometheus/procfs",
+            "branch": "master",
+            "revision": "a1dba9ce8baed984a2495b658c82687f8157b98f",
+            "packages": [
+                ".",
+                "xfs"
+            ]
+        },
+        {
+            "name": "github.com/prometheus/prometheus",
+            "branch": "master",
+            "revision": "5f764d99408ba3837d49f5d1bb7b6dcab1f1471e",
+            "packages": [
+                "config",
+                "relabel",
+                "storage",
+                "storage/local",
+                "storage/local/chunk",
+                "storage/local/codable",
+                "storage/local/index",
+                "storage/metric",
+                "storage/remote",
+                "util/flock",
+                "util/httputil",
+                "util/testutil"
+            ]
+        },
+        {
+            "name": "github.com/streadway/amqp",
+            "revision": "63795daa9a446c920826655f26ba31c81c860fd6",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/syndtr/goleveldb",
+            "branch": "master",
+            "revision": "3c5717caf1475fd25964109a0fc640bd150fce43",
+            "packages": [
+                "leveldb",
+                "leveldb/cache",
+                "leveldb/comparer",
+                "leveldb/errors",
+                "leveldb/filter",
+                "leveldb/iterator",
+                "leveldb/journal",
+                "leveldb/memdb",
+                "leveldb/opt",
+                "leveldb/storage",
+                "leveldb/table",
+                "leveldb/util"
+            ]
+        },
+        {
+            "name": "golang.org/x/net",
+            "branch": "master",
+            "revision": "ffcf1bedda3b04ebb15a168a59800a73d6dc0f4d",
+            "packages": [
+                "context",
+                "context/ctxhttp"
+            ]
+        },
+        {
+            "name": "golang.org/x/sys",
+            "branch": "master",
+            "revision": "39e3dc274464e7d2f663aa606a830611bae5f1db",
+            "packages": [
+                "unix",
+                "windows",
+                "windows/registry",
+                "windows/svc/eventlog"
+            ]
+        },
+        {
+            "name": "golang.org/x/time",
+            "branch": "master",
+            "revision": "f51c12702a4d776e4c1fa9b0fabab841babae631",
+            "packages": [
+                "rate"
+            ]
+        },
+        {
+            "name": "gopkg.in/yaml.v2",
+            "branch": "v2",
+            "revision": "a3f3340b5840cee44f372bddb5880fcbc419b46a",
+            "packages": [
+                "."
+            ]
+        }
+    ]
+}

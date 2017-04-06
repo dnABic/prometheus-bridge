@@ -1,0 +1,19 @@
+{
+    "dependencies": {
+        "github.com/golang/protobuf": {
+            "revision": "8ee79997227bf9b34611aee7946ae64735e6fd93"
+        },
+        "github.com/golang/snappy": {
+            "revision": "7db9049039a047d955fe8c19b83c8ff5abd765c7"
+        },
+        "github.com/prometheus/common": {
+            "revision": "dd2f054febf4a6c00f2343686efb775948a8bff4"
+        },
+        "github.com/prometheus/prometheus": {
+            "branch": "master"
+        },
+        "github.com/streadway/amqp": {
+            "revision": "63795daa9a446c920826655f26ba31c81c860fd6"
+        }
+    }
+}
