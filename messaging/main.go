@@ -61,14 +61,7 @@ func (s *RabbitMQStream) Publish(msg []byte, opts interface{}) error {
 	}
 	defer ch.Close()
 
-	q, err := ch.QueueDeclare(
-		options.QueueName, // name
-		false,             // durable
-		false,             // delete when unused
-		false,             // exclusive
-		false,             // no-wait
-		nil,               // arguments
-	)
+	q, err := ensureQueue(ch, options.QueueName)
 	if err != nil {
 		return err
 	}
@@ -98,14 +91,7 @@ func (s *RabbitMQStream) Consume(opts interface{}) ([]byte, error) {
 	}
 	defer ch.Close()
 
-	q, err := ch.QueueDeclare(
-		options.QueueName, // name
-		false,             // durable
-		false,             // delete when unused
-		false,             // exclusive
-		false,             // no-wait
-		nil,               // arguments
-	)
+	q, err := ensureQueue(ch, options.QueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +102,19 @@ func (s *RabbitMQStream) Consume(opts interface{}) ([]byte, error) {
 	}
 
 	return nil, err
+}
+
+func ensureQueue(ch *amqp.Channel, q string) (*amqp.Queue, error) {
+	qu, err := ch.QueueDeclare(
+		q,     // name
+		false, // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+
+	return &qu, err
 }
 
 var _ Stream = (*RabbitMQStream)(nil)
