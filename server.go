@@ -14,17 +14,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/snappy"
 	"github.com/prometheus/common/model"
 
 	"github.com/prometheus/prometheus/storage/remote"
 
 	"prometheus-amqp-bridge/messaging"
+	"prometheus-amqp-bridge/server"
 )
 
 func main() {
@@ -32,22 +32,12 @@ func main() {
 	stream.Connect("amqp://guest:guest@localhost:5672/", messaging.Options{})
 	defer stream.Close()
 
-	http.HandleFunc("/receive", func(w http.ResponseWriter, r *http.Request) {
-		reqBuf, err := ioutil.ReadAll(snappy.NewReader(r.Body))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+	ctx := server.NewContext(context.Background(), stream)
 
-		err = stream.Publish(reqBuf, &messaging.RabbitMQPublishSettings{QueueName: "metrics"})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	})
+	http.HandleFunc("/receive", server.HandleWithContext(ctx, server.ReceiveMetrics))
 
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		msg, err := getMessagse()
+		msg, err := stream.Consume(&messaging.RabbitMQConsumeSettings{QueueName: "metrics"})
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

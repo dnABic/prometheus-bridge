@@ -3,6 +3,7 @@ FROM golang
 ADD vendor /usr/src/go/src/prometheus-amqp-bridge/vendor
 ADD messaging /usr/src/go/src/prometheus-amqp-bridge/messaging
 ADD server.go /usr/src/go/src/prometheus-amqp-bridge/server.go
+ADD server /usr/src/go/src/prometheus-amqp-bridge/server
 RUN export GOPATH=/usr/src/go \
     && cd /usr/src/go/src/prometheus-amqp-bridge \
     && go build \
