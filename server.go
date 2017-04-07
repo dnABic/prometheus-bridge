@@ -18,11 +18,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/common/model"
-
-	"github.com/prometheus/prometheus/storage/remote"
-
 	"prometheus-amqp-bridge/messaging"
 	"prometheus-amqp-bridge/server"
 )
@@ -35,32 +30,7 @@ func main() {
 	ctx := server.NewContext(context.Background(), stream)
 
 	http.HandleFunc("/receive", server.HandleWithContext(ctx, server.ReceiveMetrics))
-
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		msg, err := stream.Consume(&messaging.RabbitMQConsumeSettings{QueueName: "metrics"})
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		var req remote.WriteRequest
-		if err := proto.Unmarshal(msg, &req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		for _, ts := range req.Timeseries {
-			m := make(model.Metric, len(ts.Labels))
-			for _, l := range ts.Labels {
-				m[model.LabelName(l.Name)] = model.LabelValue(l.Value)
-			}
-
-			for _, s := range ts.Samples {
-				fmt.Fprintf(w, "%s %f %d\n", m, s.Value, s.TimestampMs)
-			}
-		}
-	})
+	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics))
 
 	fmt.Println("Starting server on port 9091")
 	http.ListenAndServe(":9091", nil)
