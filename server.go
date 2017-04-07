@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"prometheus-amqp-bridge/messaging"
@@ -23,15 +24,18 @@ import (
 )
 
 func main() {
+	o := GetOptions()
+
+	log.Println("Trying to connect to AMQP: ", *o.AMQPUri)
 	stream := &messaging.RabbitMQStream{}
-	stream.Connect("amqp://guest:guest@localhost:5672/", messaging.Options{})
+	stream.Connect(*o.AMQPUri, messaging.Options{})
 	defer stream.Close()
 
 	ctx := server.NewContext(context.Background(), stream)
 
-	http.HandleFunc("/receive", server.HandleWithContext(ctx, server.ReceiveMetrics))
-	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics))
+	http.HandleFunc("/receive", server.HandleWithContext(ctx, server.ReceiveMetrics(&messaging.RabbitMQPublishSettings{*o.QueueName})))
+	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName})))
 
-	fmt.Println("Starting server on port 9091")
-	http.ListenAndServe(":9091", nil)
+	fmt.Printf("Starting server on port %d\n", *o.Port)
+	http.ListenAndServe(fmt.Sprintf(":%d", *o.Port), nil)
 }
