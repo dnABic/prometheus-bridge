@@ -11,7 +11,7 @@ pipeline {
       steps {
         sh 'mkdir -p $(dirname $PROJECT_GO_PATH)'
         sh 'ln -s $(pwd) $PROJECT_GO_PATH'
-        sh 'go get https://github.com/tcnksm/ghr'
+        sh 'go get github.com/tcnksm/ghr'
       }
     }
 
