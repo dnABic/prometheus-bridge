@@ -19,8 +19,8 @@ import (
 	"log"
 	"net/http"
 
-	"prometheus-amqp-bridge/messaging"
-	"prometheus-amqp-bridge/server"
+	"prometheus-bridge/messaging"
+	"prometheus-bridge/server"
 )
 
 func main() {
