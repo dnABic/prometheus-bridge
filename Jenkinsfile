@@ -32,7 +32,7 @@ pipeline {
         GITHUB_TOKEN = credentials('tmhjenkins')
       }
       steps {
-        sh '$GOPATH/bin/ghr $BUILD_TAG $PROJECT_GO_PATH/prometheus-bridge'
+        sh '$GOPATH/bin/ghr GIT_BRANCH-$BUILD_NUMBER $PROJECT_GO_PATH/prometheus-bridge'
       }
     }
   }
