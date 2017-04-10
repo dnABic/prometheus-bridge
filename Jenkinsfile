@@ -62,9 +62,12 @@ pipeline {
       environment {
         DOCKER_HUB = credentials('tmhitadmin')
         DOCKER_REPO = 'mobilityhouse'
-        GIT_TAG = sh(returnStdout: true, script: "git describe --tags --always").trim()
       }
       steps {
+        script {
+          GIT_TAG = sh(returnStdout: true, script: "git describe --tags --always").trim()
+        }
+
         sh 'docker build -t $DOCKER_REPO/$PROJECT_NAME:GIT_TAG .'
         sh 'docker login -u $DOCKER_HUB_USR -p $DOCKER_HUB_PSW'
         sh 'docker push $DOCKER_REPO/$PROJECT_NAME:GIT_TAG'
