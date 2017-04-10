@@ -1,6 +1,8 @@
 Prometheus Bridge
 =================
 
+[![Build Status](https://ci-test.tmh.cloud/buildStatus/icon?job=Prometheus%20Bridge/master)](https://ci-test.tmh.cloud/job/Prometheus%20Bridge/job/master/)
+
 What is this
 -------------
 
