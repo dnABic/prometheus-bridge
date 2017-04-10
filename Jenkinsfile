@@ -32,7 +32,8 @@ pipeline {
       when {
         expression {
           GIT_TAG = sh(returnStdout: true, script: "git describe --tags --abbrev=0 HEAD --always").trim()
-          return GIT_TAG =~ /^.+-.+$/
+          echo GIT_TAG
+          return GIT_TAG =~ /-/
         }
       }
       environment {
@@ -47,14 +48,14 @@ pipeline {
       when {
         expression {
           GIT_TAG = sh(returnStdout: true, script: "git describe --tags --abbrev=0 HEAD --always").trim()
-          return GIT_TAG =~ /$[^-]+/
+          return GIT_TAG =~ /^v[^\-]+$/
         }
       }
       environment {
         GITHUB_TOKEN = credentials('release-token')
       }
       steps {
-        sh '$GOPATH/bin/ghr -u mobilityhouse -t "$GITHUB_TOKEN" -r "$PROJECT_NAME" ' +  GIT_BRANCH + ' "$PROJECT_GO_PATH/$PROJECT_NAME"'
+        sh '$GOPATH/bin/ghr -u mobilityhouse -t "$GITHUB_TOKEN" -r "$PROJECT_NAME" ' +  GIT_TAG + ' "$PROJECT_GO_PATH/$PROJECT_NAME"'
       }
     }
   }
