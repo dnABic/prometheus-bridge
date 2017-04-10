@@ -1,7 +1,7 @@
 package server
 
 import (
-	"prometheus-amqp-bridge/messaging"
+	"prometheus-bridge/messaging"
 
 	"golang.org/x/net/context"
 )
