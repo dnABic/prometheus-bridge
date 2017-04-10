@@ -59,6 +59,7 @@ pipeline {
     }
 
     stage('Docker build') {
+      agent { docker 'ubuntu:xenial' }
       environment {
         DOCKER_HUB = credentials('tmhitadmin')
         DOCKER_REPO = 'mobilityhouse'
