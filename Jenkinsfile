@@ -33,7 +33,7 @@ pipeline {
         GITHUB_TOKEN = credentials('release-token')
       }
       steps {
-        sh '$GOPATH/bin/ghr -u mobilityhouse -t "$GITHUB_TOKEN" -r "$PROJECT_NAME" "$BRANCH_NAME-$BUILD_NUMBER" "$PROJECT_GO_PATH/$PROJECT_NAME"'
+        sh '$GOPATH/bin/ghr -u mobilityhouse -t "$GITHUB_TOKEN" -r "$PROJECT_NAME" -prerelease "$BRANCH_NAME-$BUILD_NUMBER" "$PROJECT_GO_PATH/$PROJECT_NAME"'
       }
     }
   }
