@@ -32,7 +32,6 @@ pipeline {
       when {
         expression {
           GIT_TAG = sh(returnStdout: true, script: "git describe --tags --abbrev=0 HEAD --always").trim()
-          echo GIT_TAG
           return GIT_TAG =~ /-/
         }
       }
