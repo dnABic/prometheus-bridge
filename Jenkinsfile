@@ -3,6 +3,7 @@ pipeline {
 
   environment {
     GOPATH = "/usr/src/go"
+    PROJECT_NAME = "prometheus-bridge"
     PROJECT_GO_PATH = "/usr/src/go/src/prometheus-bridge"
   }
 
@@ -27,12 +28,12 @@ pipeline {
       }
     }
 
-    stage('Github Reelease') {
+    stage('Release') {
       environment {
-        GITHUB_TOKEN = credentials('tmhjenkins')
+        GITHUB_TOKEN = credentials('release-token')
       }
       steps {
-        sh '$GOPATH/bin/ghr GIT_BRANCH-$BUILD_NUMBER $PROJECT_GO_PATH/prometheus-bridge'
+        sh '$GOPATH/bin/ghr -u mobilityhouse -t "$GITHUB_TOKEN" -r "$PROJECT_NAME" "$BRANCH_NAME-$BUILD_NUMBER" "$PROJECT_GO_PATH/$PROJECT_NAME"'
       }
     }
   }
