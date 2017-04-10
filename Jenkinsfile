@@ -2,6 +2,7 @@ pipeline {
   agent { docker 'golang:1.7' }
 
   environment {
+    GOPATH = "/usr/src/go"
     PROJECT_GO_PATH = "/usr/src/go/src/prometheus-bridge"
   }
 
