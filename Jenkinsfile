@@ -31,7 +31,7 @@ pipeline {
     stage('Pre Release') {
       when {
         expression {
-          GIT_TAG = sh(returnStdout: true, script: "git describe --tags --abbrev=0 HEAD --always").trim()
+          GIT_TAG = sh(returnStdout: true, script: "git describe --tags HEAD --always").trim()
           return GIT_TAG =~ /-/
         }
       }
@@ -46,7 +46,7 @@ pipeline {
     stage('Release') {
       when {
         expression {
-          GIT_TAG = sh(returnStdout: true, script: "git describe --tags --abbrev=0 HEAD --always").trim()
+          GIT_TAG = sh(returnStdout: true, script: "git describe --tags --always").trim()
           return GIT_TAG =~ /^v[^\-]+$/
         }
       }
