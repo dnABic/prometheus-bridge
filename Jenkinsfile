@@ -22,7 +22,7 @@ pipeline {
 
     stage('Build') {
       steps {
-        sh 'cd $PROJECT_GO_PATH && GOOS=linux CGO_ENABLED=0 go build -a -ldflags \'-extflags "-static"\''
+        sh 'cd $PROJECT_GO_PATH && GOOS=linux CGO_ENABLED=0 go build -a -ldflags \'-extldflags "-static"\''
       }
     }
   }
