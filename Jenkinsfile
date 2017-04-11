@@ -18,7 +18,7 @@ pipeline {
 
     stage('Test') {
       steps {
-        sh 'cd $PROJECT_GO_PATH && go list ./... | grep -v vendor | xargs go test -v'
+        sh 'cd $PROJECT_GO_PATH && go list ./... | grep -v vendor | xargs go test -v -cover'
       }
     }
 
