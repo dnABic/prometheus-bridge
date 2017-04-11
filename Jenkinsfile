@@ -39,7 +39,7 @@ pipeline {
         GITHUB_TOKEN = credentials('release-token')
       }
       steps {
-        sh '$GOPATH/bin/ghr -u mobilityhouse -t "$GITHUB_TOKEN" -r "$PROJECT_NAME" -prerelease "' + GIT_TAG + '" "$PROJECT_GO_PATH/$PROJECT_NAME"'
+        sh '$GOPATH/bin/ghr -u mobilityhouse -t "$GITHUB_TOKEN" -r "$PROJECT_NAME" -prerelease --replace "latest" "$PROJECT_GO_PATH/$PROJECT_NAME"'
       }
     }
 
@@ -65,7 +65,7 @@ pipeline {
       }
       steps {
         script {
-          GIT_TAG = sh(returnStdout: true, script: "git describe --tags --always").trim()
+          GIT_TAG = sh(returnStdout: true, script: "git describe --tags --always --abbr=0").trim()
         }
 
         sh 'curl -qo docker https://master.dockerproject.org/linux/amd64/docker && chmod u+x docker'
