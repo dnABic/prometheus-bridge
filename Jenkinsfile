@@ -71,7 +71,7 @@ pipeline {
         sh 'curl -qo docker https://master.dockerproject.org/linux/amd64/docker && chmod u+x docker'
         sh './docker build -t "$DOCKER_REPO/$PROJECT_NAME:GIT_TAG" .'
         sh './docker login -u $DOCKER_HUB_USR -p $DOCKER_HUB_PSW'
-        sh './docker push "$DOCKER_REPO/$PROJECT_NAME:GIT_TAG"'
+        sh './docker push "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '"'
       }
     }
   }
