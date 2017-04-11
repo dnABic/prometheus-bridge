@@ -1,5 +1,5 @@
 {
-    "memo": "4b31f6663b47da382eb42955df76d422f5bb5170be86d2a446d51ff159f460cb",
+    "memo": "af076431c2dc5cc9eda5f4938a010fb36a75e929c1f314ec85a6d52730ebca3a",
     "projects": [
         {
             "name": "github.com/Sirupsen/logrus",
@@ -15,6 +15,14 @@
             "revision": "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9",
             "packages": [
                 "quantile"
+            ]
+        },
+        {
+            "name": "github.com/davecgh/go-spew",
+            "version": "v1.1.0",
+            "revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+            "packages": [
+                "spew"
             ]
         },
         {
@@ -37,6 +45,14 @@
             "revision": "3247c84500bff8d9fb6d579d800f20b3e091582c",
             "packages": [
                 "pbutil"
+            ]
+        },
+        {
+            "name": "github.com/pmezard/go-difflib",
+            "version": "v1.0.0",
+            "revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+            "packages": [
+                "difflib"
             ]
         },
         {
@@ -98,6 +114,14 @@
             "revision": "63795daa9a446c920826655f26ba31c81c860fd6",
             "packages": [
                 "."
+            ]
+        },
+        {
+            "name": "github.com/stretchr/testify",
+            "version": "v1.1.4",
+            "revision": "69483b4bd14f5845b5a1e55bca19e954e827f1d0",
+            "packages": [
+                "assert"
             ]
         },
         {
