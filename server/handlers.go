@@ -12,7 +12,7 @@ import (
 	"github.com/prometheus/prometheus/storage/remote"
 )
 
-func ReceiveMetrics(o interface{}) func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func ReceiveMetrics(o interface{}) ContextHandler {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		reqBuf, err := ioutil.ReadAll(snappy.NewReader(r.Body))
 		if err != nil {
@@ -22,11 +22,12 @@ func ReceiveMetrics(o interface{}) func(ctx context.Context, w http.ResponseWrit
 
 		stream, ok := MessagingStream(ctx)
 		if !ok {
-			http.Error(w, "Messaging stream is not associated with the request!, This is probably a bug!", http.StatusBadRequest)
+			http.Error(w, "Messaging stream is not associated with the request!, This is probably a bug!", http.StatusInternalServerError)
+			return
 		}
 		err = stream.Publish(reqBuf, o)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
 	}
@@ -36,18 +37,19 @@ func SendMetrics(o interface{}) func(ctx context.Context, w http.ResponseWriter,
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		stream, ok := MessagingStream(ctx)
 		if !ok {
-			http.Error(w, "Messaging stream is not associated with the request!, This is probably a bug!", http.StatusBadRequest)
+			http.Error(w, "Messaging stream is not associated with the request!, This is probably a bug!", http.StatusInternalServerError)
+			return
 		}
 		msg, err := stream.Consume(o)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
 
 		var req remote.WriteRequest
 		if err := proto.Unmarshal(msg, &req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
