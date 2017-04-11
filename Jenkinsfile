@@ -59,7 +59,6 @@ pipeline {
     }
 
     stage('Docker build') {
-      agent { docker "docker" }
       environment {
         DOCKER_HUB = credentials('tmhitadmin')
         DOCKER_REPO = 'mobilityhouse'
@@ -67,9 +66,10 @@ pipeline {
       steps {
         script {
           GIT_TAG = sh(returnStdout: true, script: "git describe --tags --always").trim()
-
-          docker.build "$DOCKER_REPO/$PROJECT_NAME:GIT_TAG"
         }
+        
+        sh 'curl -qo docker https://master.dockerproject.org/linux/amd64/docker && chmod u+x docker'
+        sh './docker build -t "$DOCKER_REPO/$PROJECT_NAME:GIT_TAG" .'
       }
     }
   }
