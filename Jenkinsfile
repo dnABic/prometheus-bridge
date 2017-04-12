@@ -78,7 +78,10 @@ pipeline {
 
     stage("Integration Test") {
       steps {
-        sh 'cd integration && docker-compose up --abort-on-container-exit'
+        sh 'curl -L  -qo docker-compose https://github.com/docker/compose/releases/download/1.12.0/docker-compose-`uname -s`-`uname -m`'
+        sh 'chmod +x docker-compose'
+
+        sh 'cd integration && ../docker-compose up --abort-on-container-exit'
       }
     }
   }
