@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"log"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -62,7 +63,10 @@ func (s *RabbitMQConnector) Connect(uri string, o Options) {
 
 	conn, err := amqp.Dial(uri)
 	if err != nil {
-		log.Panic(err)
+		log.Println("Could not initiate connection to AMQP: ", err)
+
+		time.Sleep(time.Second)
+		s.Connect(uri, o)
 	}
 
 	s.connection = conn
