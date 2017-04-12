@@ -1,0 +1,26 @@
+version: '2'
+services:
+  etcd:
+    image: quay.io/coreos/etcd
+    command: /usr/local/bin/etcd --advertise-client-urls http://etcd:2379 --listen-client-urls http://0.0.0.0:2379
+  prometheus:
+    build:
+      context: .
+      dockerfile: dockerfile.prometheus
+    command: -log.format="logger:stdout" -config.file=/etc/prometheus/prometheus.yml
+  bridge:
+    image: mobilityhouse/prometheus-bridge:edge
+    depends_on:
+      - rabbitmq
+    command: -amqp-uri amqp://rabbitmq:5672
+    expose:
+      - "9091"
+  rabbitmq:
+    image: rabbitmq
+    expose:
+      - "5672"
+  curl:
+    image: hiromasaono/curl
+    command: ["bash", "-c", "sleep 5 && curl http://bridge:9091/metrics"]
+    depends_on:
+      - bridge
