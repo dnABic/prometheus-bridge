@@ -70,8 +70,15 @@ pipeline {
 
         sh 'curl -qo docker https://master.dockerproject.org/linux/amd64/docker && chmod u+x docker'
         sh './docker build -t "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '" .'
+        sh './docker tag "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '" $DOCKER_REPO/$PROJECT_NAME:edge'
         sh './docker login -u $DOCKER_HUB_USR -p $DOCKER_HUB_PSW'
         sh './docker push "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '"'
+      }
+    }
+
+    stage("Integration Test") {
+      steps {
+        sh 'cd integration && docker-compose up --abort-on-container-exit'
       }
     }
   }
