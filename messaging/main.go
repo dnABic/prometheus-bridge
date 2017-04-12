@@ -8,15 +8,31 @@ import (
 
 type Options map[string]interface{}
 
-type Stream interface {
+type Consumer interface {
+	Consume(opts interface{}) ([][]byte, error)
+}
+
+type Publisher interface {
+	Publish(msg []byte, opts interface{}) error
+}
+
+type Connector interface {
 	Connect(uri string, opts Options)
 	Close()
-	Publish(msg []byte, opts interface{}) error
-	Consume(opts interface{}) ([]byte, error)
+}
+
+type Stream interface {
+	Connector
+	Publisher
+	Consumer
+}
+
+type RabbitMQConnector struct {
+	connection *amqp.Connection
 }
 
 type RabbitMQStream struct {
-	connection *amqp.Connection
+	RabbitMQConnector
 }
 
 type RabbitMQPublishSettings struct {
@@ -24,10 +40,18 @@ type RabbitMQPublishSettings struct {
 }
 
 type RabbitMQConsumeSettings struct {
-	QueueName string
+	QueueName    string
+	MessageCount uint
 }
 
-func (s *RabbitMQStream) Connect(uri string, o Options) {
+func NewRabbitMQStream(uri string, o Options) Stream {
+	s := &RabbitMQStream{RabbitMQConnector{}}
+	s.Connect(uri, o)
+
+	return s
+}
+
+func (s *RabbitMQConnector) Connect(uri string, o Options) {
 	close := make(chan *amqp.Error)
 	go func() {
 		err := <-close
@@ -45,7 +69,7 @@ func (s *RabbitMQStream) Connect(uri string, o Options) {
 	conn.NotifyClose(close)
 }
 
-func (s *RabbitMQStream) Close() {
+func (s *RabbitMQConnector) Close() {
 	s.connection.Close()
 }
 
@@ -79,7 +103,7 @@ func (s *RabbitMQStream) Publish(msg []byte, opts interface{}) error {
 	return err
 }
 
-func (s *RabbitMQStream) Consume(opts interface{}) ([]byte, error) {
+func (s *RabbitMQStream) Consume(opts interface{}) ([][]byte, error) {
 	options, ok := opts.(*RabbitMQConsumeSettings)
 	if !ok {
 		log.Println("Wrong RabbitMQ publish settings, use *RabbitMQPublishSettings instead!")
@@ -96,12 +120,21 @@ func (s *RabbitMQStream) Consume(opts interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	delivery, ok, err := ch.Get(q.Name, true)
-	if ok {
-		return delivery.Body, nil
+	if options.MessageCount < 1 {
+		options.MessageCount = 1
+	}
+	result := make([][]byte, options.MessageCount)
+
+	for i := uint(0); i < options.MessageCount; i++ {
+		delivery, ok, err := ch.Get(q.Name, true)
+		if !ok {
+			return result, err
+		}
+
+		result[i] = delivery.Body
 	}
 
-	return nil, err
+	return result, nil
 }
 
 func ensureQueue(ch *amqp.Channel, q string) (*amqp.Queue, error) {

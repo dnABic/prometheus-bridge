@@ -27,14 +27,14 @@ func main() {
 	o := GetOptions()
 
 	log.Println("Trying to connect to AMQP: ", *o.AMQPUri)
-	stream := &messaging.RabbitMQStream{}
-	stream.Connect(*o.AMQPUri, messaging.Options{})
+
+	stream := messaging.NewRabbitMQStream(*o.AMQPUri, messaging.Options{})
 	defer stream.Close()
 
 	ctx := server.NewContext(context.Background(), stream)
 
 	http.HandleFunc("/receive", server.HandleWithContext(ctx, server.ReceiveMetrics(&messaging.RabbitMQPublishSettings{*o.QueueName})))
-	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName})))
+	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName, 1})))
 
 	fmt.Printf("Starting server on port %d\n", *o.Port)
 	http.ListenAndServe(fmt.Sprintf(":%d", *o.Port), nil)

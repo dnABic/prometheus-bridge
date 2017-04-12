@@ -40,27 +40,29 @@ func SendMetrics(o interface{}) func(ctx context.Context, w http.ResponseWriter,
 			http.Error(w, "Messaging stream is not associated with the request!, This is probably a bug!", http.StatusInternalServerError)
 			return
 		}
-		msg, err := stream.Consume(o)
+		msgs, err := stream.Consume(o)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
 
-		var req remote.WriteRequest
-		if err := proto.Unmarshal(msg, &req); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		for _, ts := range req.Timeseries {
-			m := make(model.Metric, len(ts.Labels))
-			for _, l := range ts.Labels {
-				m[model.LabelName(l.Name)] = model.LabelValue(l.Value)
+		for _, msg := range msgs {
+			var req remote.WriteRequest
+			if err := proto.Unmarshal(msg, &req); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 
-			for _, s := range ts.Samples {
-				fmt.Fprintf(w, "%s %f %d\n", m, s.Value, s.TimestampMs)
+			for _, ts := range req.Timeseries {
+				m := make(model.Metric, len(ts.Labels))
+				for _, l := range ts.Labels {
+					m[model.LabelName(l.Name)] = model.LabelValue(l.Value)
+				}
+
+				for _, s := range ts.Samples {
+					fmt.Fprintf(w, "%s %f %d\n", m, s.Value, s.TimestampMs)
+				}
 			}
 		}
 	}

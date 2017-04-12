@@ -16,14 +16,14 @@ import (
 
 type mockOptions struct {
 	publishResult  error
-	consumeResults []byte
+	consumeResults [][]byte
 }
 
 func (s *mockStream) Publish(body []byte, opts interface{}) error {
 	return opts.(*mockOptions).publishResult
 }
 
-func (s *mockStream) Consume(opts interface{}) ([]byte, error) {
+func (s *mockStream) Consume(opts interface{}) ([][]byte, error) {
 	if opts.(*mockOptions).consumeResults == nil {
 		return nil, errors.New("Consume failed!")
 	}
@@ -103,7 +103,7 @@ func TestSendMetricsSuccess(t *testing.T) {
 	}
 	result, _ := proto.Marshal(&ts)
 	h := SendMetrics(&mockOptions{
-		consumeResults: result,
+		consumeResults: [][]byte{result},
 	})
 	h(ctx, wrt, req)
 
@@ -129,7 +129,7 @@ func TestSendMetricsConstructsValidResponse(t *testing.T) {
 	}
 	result, _ := proto.Marshal(&ts)
 	h := SendMetrics(&mockOptions{
-		consumeResults: result,
+		consumeResults: [][]byte{result},
 	})
 	h(ctx, wrt, req)
 
@@ -144,7 +144,7 @@ func TestSendMetricsMessageFormatInvalid(t *testing.T) {
 	req := httptest.NewRequest("POST", "/metrics", strings.NewReader(""))
 	ctx := NewContext(context.Background(), &mockStream{})
 
-	h := SendMetrics(&mockOptions{consumeResults: []byte("Hello :)")})
+	h := SendMetrics(&mockOptions{consumeResults: [][]byte{[]byte("Hello :)")}})
 	h(ctx, wrt, req)
 
 	fmt.Println(wrt.Body.String())
