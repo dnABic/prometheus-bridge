@@ -67,6 +67,8 @@ func (s *RabbitMQConnector) Connect(uri string, o Options) {
 
 		time.Sleep(time.Second)
 		s.Connect(uri, o)
+
+		return
 	}
 
 	s.connection = conn
