@@ -29,12 +29,6 @@ pipeline {
     }
 
     stage('Pre Release') {
-      when {
-        expression {
-          GIT_TAG = sh(returnStdout: true, script: "git describe --tags HEAD --always").trim()
-          return GIT_TAG =~ /-/
-        }
-      }
       environment {
         GITHUB_TOKEN = credentials('release-token')
       }
