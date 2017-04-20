@@ -146,7 +146,7 @@ func (s *RabbitMQStream) Consume(opts interface{}) ([][]byte, error) {
 func ensureQueue(ch *amqp.Channel, q string) (*amqp.Queue, error) {
 	qu, err := ch.QueueDeclare(
 		q,     // name
-		false, // durable
+		true,  // durable
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait
