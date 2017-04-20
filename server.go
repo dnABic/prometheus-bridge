@@ -34,7 +34,7 @@ func main() {
 	ctx := server.NewContext(context.Background(), stream)
 
 	http.HandleFunc("/receive", server.HandleWithContext(ctx, server.ReceiveMetrics(&messaging.RabbitMQPublishSettings{*o.QueueName})))
-	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName, 10})))
+	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName, *o.Count})))
 
 	fmt.Printf("Starting server on port %d\n", *o.Port)
 	http.ListenAndServe(fmt.Sprintf(":%d", *o.Port), nil)
