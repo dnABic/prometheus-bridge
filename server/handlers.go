@@ -12,8 +12,12 @@ import (
 	"github.com/prometheus/prometheus/storage/remote"
 )
 
+var collector = initializeMetrics()
+
 func ReceiveMetrics(o interface{}) ContextHandler {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		collector.HttpRequestCount.WithLabelValues("recieve").Inc()
+
 		reqBuf, err := ioutil.ReadAll(snappy.NewReader(r.Body))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -35,6 +39,7 @@ func ReceiveMetrics(o interface{}) ContextHandler {
 
 func SendMetrics(o interface{}) func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		collector.HttpRequestCount.WithLabelValues("send").Inc()
 		stream, ok := MessagingStream(ctx)
 		if !ok {
 			http.Error(w, "Messaging stream is not associated with the request!, This is probably a bug!", http.StatusInternalServerError)
