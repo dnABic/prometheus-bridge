@@ -19,6 +19,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"prometheus-bridge/messaging"
 	"prometheus-bridge/server"
 )
@@ -26,6 +28,7 @@ import (
 const (
 	CollectorEndpoint = "/receive"
 	FederationEdpoint = "/expose"
+	MetricsEndpoint   = "/metrics"
 )
 
 func main() {
@@ -40,6 +43,7 @@ func main() {
 
 	http.HandleFunc(CollectorEndpoint, server.HandleWithContext(ctx, server.ReceiveMetrics(&messaging.RabbitMQPublishSettings{*o.QueueName})))
 	http.HandleFunc(FederationEdpoint, server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName, *o.Count})))
+	http.Handle(MetricsEndpoint, promhttp.Handler())
 
 	fmt.Printf("Starting server on port %d\n", *o.Port)
 	http.ListenAndServe(fmt.Sprintf(":%d", *o.Port), nil)

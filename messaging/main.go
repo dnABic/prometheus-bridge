@@ -45,6 +45,8 @@ type RabbitMQConsumeSettings struct {
 	MessageCount uint
 }
 
+var collector = initializeMetrics()
+
 func NewRabbitMQStream(uri string, o Options) Stream {
 	s := &RabbitMQStream{RabbitMQConnector{}}
 	s.Connect(uri, o)
@@ -64,12 +66,15 @@ func (s *RabbitMQConnector) Connect(uri string, o Options) {
 	conn, err := amqp.Dial(uri)
 	if err != nil {
 		log.Println("Could not initiate connection to AMQP: ", err)
+		collector.BrokerConnections.WithLabelValues(uri, ConnectionFailed).Inc()
 
 		time.Sleep(time.Second)
 		s.Connect(uri, o)
 
 		return
 	}
+
+	collector.BrokerConnections.WithLabelValues(uri, ConnectionSucceeded).Inc()
 
 	s.connection = conn
 	conn.NotifyClose(close)
@@ -84,6 +89,8 @@ func (s *RabbitMQStream) Publish(msg []byte, opts interface{}) error {
 	if !ok {
 		log.Println("Wrong RabbitMQ publish settings, use *RabbitMQPublishSettings instead!")
 	}
+
+	defer measureElapsedTime(time.Now(), collector.PublishMessageSummary)
 
 	ch, err := s.connection.Channel()
 	if err != nil {
@@ -114,6 +121,8 @@ func (s *RabbitMQStream) Consume(opts interface{}) ([][]byte, error) {
 	if !ok {
 		log.Println("Wrong RabbitMQ publish settings, use *RabbitMQPublishSettings instead!")
 	}
+
+	defer measureElapsedTime(time.Now(), collector.ConsumeMessageSummary)
 
 	ch, err := s.connection.Channel()
 	if err != nil {
