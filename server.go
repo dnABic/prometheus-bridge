@@ -23,6 +23,11 @@ import (
 	"prometheus-bridge/server"
 )
 
+const (
+	CollectorEndpoint = "/receive"
+	FederationEdpoint = "/expose"
+)
+
 func main() {
 	o := GetOptions()
 
@@ -33,8 +38,8 @@ func main() {
 
 	ctx := server.NewContext(context.Background(), stream)
 
-	http.HandleFunc("/receive", server.HandleWithContext(ctx, server.ReceiveMetrics(&messaging.RabbitMQPublishSettings{*o.QueueName})))
-	http.HandleFunc("/metrics", server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName, *o.Count})))
+	http.HandleFunc(CollectorEndpoint, server.HandleWithContext(ctx, server.ReceiveMetrics(&messaging.RabbitMQPublishSettings{*o.QueueName})))
+	http.HandleFunc(FederationEdpoint, server.HandleWithContext(ctx, server.SendMetrics(&messaging.RabbitMQConsumeSettings{*o.QueueName, *o.Count})))
 
 	fmt.Printf("Starting server on port %d\n", *o.Port)
 	http.ListenAndServe(fmt.Sprintf(":%d", *o.Port), nil)
