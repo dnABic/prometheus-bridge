@@ -9,4 +9,4 @@ scrape_configs:
     - 127.0.0.1:2379
 
 remote_write:
-  url: http://bridge:9091/receive
+  - url: http://bridge:9091/receive

@@ -21,6 +21,6 @@ services:
       - "5672"
   curl:
     image: hiromasaono/curl
-    command: ["bash", "-c", "sleep 20 && curl http://bridge:9091/metrics"]
+    command: ["bash", "-c", "sleep 20 && curl http://bridge:9091/expose"]
     depends_on:
       - bridge
