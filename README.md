@@ -10,8 +10,8 @@ It uses RabbitMQ as a transfer medium, so after remote push from upstream Promet
 
 How to use it
 -------------
-1. Setup your upstream Prometheus instance to send metrics the Bridge using `remote_write` config
-2. Setup your downstream Prometheus instance to scrape metrics from the Bridge
+1. Setup your upstream Prometheus instance to send metrics the Bridge using `remote_write` config.
+2. Setup your downstream Prometheus instance to scrape metrics from the Bridge using `/expose` path.
 3. Make sure your RabbitMQ instance is configured and accessible.
 4. Start the Bridge service.
 
