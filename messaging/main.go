@@ -119,7 +119,7 @@ func (s *RabbitMQStream) Publish(msg []byte, opts interface{}) error {
 func (s *RabbitMQStream) Consume(opts interface{}) ([][]byte, error) {
 	options, ok := opts.(*RabbitMQConsumeSettings)
 	if !ok {
-		log.Println("Wrong RabbitMQ publish settings, use *RabbitMQPublishSettings instead!")
+		log.Println("Wrong RabbitMQ consume settings, use *RabbitMQConsumeSettings instead!")
 	}
 
 	defer measureElapsedTime(time.Now(), collector.ConsumeMessageSummary)
