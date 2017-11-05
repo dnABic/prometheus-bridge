@@ -7,10 +7,9 @@ pipeline {
       stage('Build') {
         steps {
           echo 'Building..'
-          def build_id = "dnabic/prometheus-bridge:${env.BUILD_NUMBER}"
           sh 'ls -la'
           sh 'pwd'
-          docker.image(build_id).inside("-u 1000:1000") {
+          docker.image('dnabic/prometheus-bridge:001').inside("-u 1000:1000") {
             sh 'whoami'
           }
         }
