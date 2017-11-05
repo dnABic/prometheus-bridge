@@ -1,28 +1,35 @@
 pipeline {
-  agent any
+  agent none
 
-    stages {
-      stage('Prepare Build') {
-      }
-      stage('Build') {
-        steps {
-          echo 'Building..'
-          sh 'ls -la'
-          sh 'pwd'
-          docker.image('dnabic/prometheus-bridge:001').inside("-u 1000:1000") {
-            sh 'whoami'
-          }
+  stages {
+    stage('Prepare Build') {
+    }
+    stage('Build') {
+      agent {
+        docker {
+          image 'golang:1.9'
         }
       }
-      stage('Test') {
-        steps {
-          echo 'Testing..'
-        }
-      }
-      stage('Deploy') {
-        steps {
-          echo 'Deploying....'
-        }
+      steps {
+        echo 'Building..'
+        sh 'ls -la'
+        sh 'pwd'
+        sh 'whoami'
       }
     }
+    stage('Test') {
+      steps {
+        echo 'Testing..'
+        sh 'ls -la'
+        sh 'pwd'
+        sh 'whoami'
+      }
+    }
+    stage('Deploy') {
+      steps {
+        echo 'Deploying....'
+        sh 'docker ps'
+      }
+    }
+  }
 }
