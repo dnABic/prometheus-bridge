@@ -12,7 +12,11 @@ pipeline {
       }
     }
     stage('Test') {
-      agent { docker 'golang:1.9' }
+      agent { docker {
+          image 'golang:1.9'
+          args '-v  /home/jenkins/workspace/test02:/home/jenkins/workspace/test02'
+        }
+      }
       steps {
         echo 'Testing..'
         sh 'sleep 200'
