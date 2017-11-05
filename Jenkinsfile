@@ -9,6 +9,7 @@ pipeline {
         sh 'ls -la'
         sh 'pwd'
         sh 'whoami'
+        sh 'sleep 300'
       }
     }
     stage('Test') {
