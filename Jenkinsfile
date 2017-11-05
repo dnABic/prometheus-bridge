@@ -2,8 +2,6 @@ pipeline {
   agent none
 
   stages {
-    stage('Prepare Build') {
-    }
     stage('Build') {
       agent {
         docker {
