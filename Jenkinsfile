@@ -9,6 +9,7 @@ pipeline {
         sh 'pwd'
         sh 'whoami'
         sh 'find / -name "docker"'
+        sh 'sleep 300'
       }
     }
     stage('Test') {
