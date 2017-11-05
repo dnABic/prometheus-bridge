@@ -3,16 +3,12 @@ pipeline {
 
   stages {
     stage('Build') {
-      agent {
-        docker {
-          image 'golang:1.9'
-        }
-      }
       steps {
         echo 'Building..'
         sh 'ls -la'
         sh 'pwd'
         sh 'whoami'
+        sh 'find / -name "docker"'
       }
     }
     stage('Test') {
