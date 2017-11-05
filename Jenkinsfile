@@ -8,8 +8,8 @@ pipeline {
         sh 'ls -la'
         sh 'pwd'
         sh 'whoami'
-        sh 'find / -name "docker"'
         sh 'sleep 300'
+        sh 'find / -name "docker"'
       }
     }
     stage('Test') {
