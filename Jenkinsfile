@@ -1,8 +1,9 @@
 pipeline {
-  agent { docker 'golang:1.9' }
+  agent none
 
   stages {
     stage('Build') {
+      agent any
       steps {
         echo 'Building..'
         sh 'ls -la'
@@ -14,6 +15,7 @@ pipeline {
       }
     }
     stage('Test') {
+      agent { docker 'golang:1.9' }
       steps {
         echo 'Testing..'
         sh 'ls -la'
@@ -22,6 +24,7 @@ pipeline {
       }
     }
     stage('Deploy') {
+      agent any
       steps {
         echo 'Deploying....'
         sh 'docker ps'
