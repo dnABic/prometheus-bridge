@@ -1,5 +1,5 @@
 pipeline {
-  agent any
+  agent { docker 'golang:1.9' }
 
   environment {
     GOPATH = "/usr/src/go"
