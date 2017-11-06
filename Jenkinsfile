@@ -8,16 +8,27 @@ pipeline {
   }
 
   stages {
+    stage('Prepare Environment') {
+      steps {
+        sh 'mkdir -p $(dirname $PROJECT_GO_PATH)'
+          sh 'ln -s $(pwd) $PROJECT_GO_PATH'
+          sh 'go get github.com/tcnksm/ghr'
+      }
+    }
+    stage('Test') {
+      steps {
+        sh 'cd $PROJECT_GO_PATH && go list ./... | grep -v vendor | xargs go test -v -cover'
+      }
+    }
     stage('Build') {
       steps {
         echo 'Building..'
         sh 'ls -la'
         sh 'pwd'
-        sh 'whoami'
         sh 'sleep 120'
       }
     }
-    stage('Test') {
+    stage('Test v2') {
       steps {
         echo 'Testing..'
         sh 'ls -la'
