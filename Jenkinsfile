@@ -41,29 +41,21 @@ pipeline {
           GIT_TAG = sh(returnStdout: true, script: "git describe --tags --always").trim()
         }
 
-        sh 'curl -qo docker https://master.dockerproject.org/linux/amd64/docker && chmod u+x docker'
+        sh 'curl -qo /usr/bin/docker https://master.dockerproject.org/linux/x86_64/docker && chmod u+x /usr/bin/docker'
       }
     }
 
-    stage('Build v2') {
+    stage("Integration Test") {
       steps {
-        echo 'Building..'
-        sh 'ls -la'
-        sh 'pwd'
+        sh 'curl -L  -qo /usr/bin/docker-compose https://github.com/docker/compose/releases/download/1.12.0/docker-compose-`uname -s`-`uname -m`'
+          sh 'chmod +x /usr/bin/docker-compose'
       }
     }
-    stage('Test v2') {
-      steps {
-        echo 'Testing..'
-        sh 'ls -la'
-        sh 'pwd'
-        sh 'whoami'
-      }
-    }
-    stage('Deploy') {
-      steps {
-        echo 'Deploying....'
-      }
+  }
+
+  post {
+    always {
+      sh 'echo ./docker-compose -f integration/docker-compose.yaml down --remove-orphans || true'
     }
   }
 }
