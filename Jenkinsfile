@@ -32,6 +32,15 @@ pipeline {
       }
     }
 
+    stage('Pre Release') {
+      environment {
+        GITHUB_TOKEN = credentials('release-token')
+      }
+      steps {
+        sh '$GOPATH/bin/ghr -u dnabic -t 1234 -r "$PROJECT_NAME" -prerelease --replace "latest" "$PROJECT_GO_PATH/$PROJECT_NAME"'
+      }
+    }
+
     stage('Docker build') {
       environment {
         DOCKER_REPO = 'dnabic'
