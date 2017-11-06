@@ -10,9 +10,10 @@ pipeline {
   stages {
     stage('Prepare Environment') {
       steps {
+        sh 'sleep 200'
         sh 'mkdir -p $(dirname $PROJECT_GO_PATH)'
-          sh 'ln -s $(pwd) $PROJECT_GO_PATH'
-          sh 'go get github.com/tcnksm/ghr'
+        sh 'ln -s $(pwd) $PROJECT_GO_PATH'
+        sh 'go get github.com/tcnksm/ghr'
       }
     }
     stage('Test') {
@@ -25,7 +26,6 @@ pipeline {
         echo 'Building..'
         sh 'ls -la'
         sh 'pwd'
-        sh 'sleep 120'
       }
     }
     stage('Test v2') {
