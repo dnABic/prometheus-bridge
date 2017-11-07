@@ -60,7 +60,7 @@ pipeline {
     stage('Docker build') {
       environment {
         DOCKER_HUB = credentials('tmhitadmin')
-        DOCKER_REPO = 'mobilityhouse'
+        DOCKER_REPO = 'dnabic'
       }
       steps {
         script {
