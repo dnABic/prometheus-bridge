@@ -68,10 +68,10 @@ pipeline {
         }
 
         sh 'curl -qo /usr/bin/docker https://master.dockerproject.org/linux/x86_64/docker && chmod u+x /usr/bin/docker'
-        sh './docker build -t "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '" .'
-        sh './docker tag "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '" $DOCKER_REPO/$PROJECT_NAME:edge'
-        sh './docker login -u $DOCKER_HUB_USR -p $DOCKER_HUB_PSW'
-        sh './docker push "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '"'
+        sh '/usr/bin/docker build -t "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '" .'
+        sh '/usr/bin/docker tag "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '" $DOCKER_REPO/$PROJECT_NAME:edge'
+        sh '/usr/bin/docker login -u $DOCKER_HUB_USR -p $DOCKER_HUB_PSW'
+        sh '/usr/bin/docker push "$DOCKER_REPO/$PROJECT_NAME:' + GIT_TAG + '"'
       }
     }
 
