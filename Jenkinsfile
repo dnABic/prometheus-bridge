@@ -80,14 +80,14 @@ pipeline {
         sh 'curl -L  -qo /usr/bin/docker-compose https://github.com/docker/compose/releases/download/1.12.0/docker-compose-`uname -s`-`uname -m`'
         sh 'chmod +x /usr/bin/docker-compose'
 
-        sh 'cd integration && ../docker-compose up --abort-on-container-exit --build'
+        sh 'cd integration && /usr/bin/docker-compose up --abort-on-container-exit --build'
       }
     }
   }
 
   post {
     always {
-      sh './docker-compose -f integration/docker-compose.yaml down --remove-orphans || true'
+      sh '/usr/bin/docker-compose -f integration/docker-compose.yaml down --remove-orphans || true'
     }
   }
 }
