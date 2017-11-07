@@ -2,7 +2,7 @@ pipeline {
   agent {
     docker {
       image 'golang:1.9'
-      args '-u 0:0'
+      args '-u 0:0 -v /var/run/docker.sock:/var/run/docker.sock'
     }
   }
 
