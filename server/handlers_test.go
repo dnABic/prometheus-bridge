@@ -37,7 +37,7 @@ func TestReceiveMetricsStoresInStream(t *testing.T) {
 	ctx := NewContext(context.Background(), &mockStream{})
 	wrt := httptest.NewRecorder()
 	//buf := make([]byte, 8192)
-	str = "test"
+	str := "test"
 	compressed := snappy.Encode(nil, []byte(str))
 	req := httptest.NewRequest("POST", "/send", bytes.NewBuffer(compressed))
 
