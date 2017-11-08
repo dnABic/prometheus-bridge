@@ -9,16 +9,22 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/storage/remote"
+	"github.com/prometheus/prometheus/prompb"
 )
 
 var collector = initializeMetrics()
 
 func ReceiveMetrics(o interface{}) ContextHandler {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		collector.HttpRequestCount.WithLabelValues("recieve").Inc()
+		collector.HttpRequestCount.WithLabelValues("receive").Inc()
 
-		reqBuf, err := ioutil.ReadAll(snappy.NewReader(r.Body))
+		compressed, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		reqBuf, err := snappy.Decode(nil, compressed)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -53,7 +59,7 @@ func SendMetrics(o interface{}) func(ctx context.Context, w http.ResponseWriter,
 		}
 
 		for _, msg := range msgs {
-			var req remote.WriteRequest
+			var req prompb.WriteRequest
 			if err := proto.Unmarshal(msg, &req); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -66,7 +72,7 @@ func SendMetrics(o interface{}) func(ctx context.Context, w http.ResponseWriter,
 				}
 
 				for _, s := range ts.Samples {
-					fmt.Fprintf(w, "%s %f %d\n", m, s.Value, s.TimestampMs)
+					fmt.Fprintf(w, "%s %f %d\n", m, s.Value, s.Timestamp)
 				}
 			}
 		}
