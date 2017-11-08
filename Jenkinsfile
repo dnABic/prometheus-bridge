@@ -21,6 +21,12 @@ pipeline {
       }
     }
 
+    stage('Test') {
+      steps {
+        sh 'cd $PROJECT_GO_PATH && go list ./... | grep -v vendor | xargs go test -v -cover'
+      }
+    }
+
     stage('Build') {
       steps {
         sh 'cd $PROJECT_GO_PATH && GOOS=linux CGO_ENABLED=0 go build -a -ldflags \'-extldflags "-static"\''
