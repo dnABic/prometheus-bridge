@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,6 +30,19 @@ func (s *mockStream) Consume(opts interface{}) ([][]byte, error) {
 	}
 
 	return opts.(*mockOptions).consumeResults, nil
+}
+
+func TestReceiveMetricsStoresInStream(t *testing.T) {
+	ctx := NewContext(context.Background(), &mockStream{})
+	wrt := httptest.NewRecorder()
+	buf := make([]byte, 8192)
+	req := httptest.NewRequest("POST", "/send", snappy.Encode(buf, strings.NewReader("")))
+
+	h := ReceiveMetrics(&mockOptions{})
+	h(ctx, wrt, req)
+
+	fmt.Println(wrt.Body.String())
+	assert.Equal(t, wrt.Code, 200)
 }
 
 // =======
