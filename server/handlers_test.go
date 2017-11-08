@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -35,8 +36,10 @@ func (s *mockStream) Consume(opts interface{}) ([][]byte, error) {
 func TestReceiveMetricsStoresInStream(t *testing.T) {
 	ctx := NewContext(context.Background(), &mockStream{})
 	wrt := httptest.NewRecorder()
-	buf := make([]byte, 8192)
-	req := httptest.NewRequest("POST", "/send", snappy.Encode(buf, strings.NewReader("")))
+	//buf := make([]byte, 8192)
+	str = "test"
+	compressed := snappy.Encode(nil, []byte(str))
+	req := httptest.NewRequest("POST", "/send", bytes.NewBuffer(compressed))
 
 	h := ReceiveMetrics(&mockOptions{})
 	h(ctx, wrt, req)
