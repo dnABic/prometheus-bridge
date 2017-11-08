@@ -33,60 +33,6 @@ func (s *mockStream) Consume(opts interface{}) ([][]byte, error) {
 	return opts.(*mockOptions).consumeResults, nil
 }
 
-func TestReceiveMetricsStoresInStream(t *testing.T) {
-	ctx := NewContext(context.Background(), &mockStream{})
-	wrt := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/expose", nil)
-
-	h := ReceiveMetrics(&mockOptions{})
-	h(ctx, wrt, req)
-
-	fmt.Println(wrt.Body.String())
-	assert.Equal(t, wrt.Code, 200)
-}
-
-func TestReceiveMetricsFailsWithInvalidContext(t *testing.T) {
-	wrt := httptest.NewRecorder()
-	//req := httptest.NewRequest("POST", "/send", strings.NewReader(""))
-	matcher1, err := labels.NewMatcher(labels.MatchEqual, "__name__", "test_metric1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	matcher2, err := labels.NewMatcher(labels.MatchEqual, "d", "e")
-	if err != nil {
-		t.Fatal(err)
-	}
-	query, err := remote.ToQuery(0, 1, []*labels.Matcher{matcher1, matcher2})
-	if err != nil {
-		t.Fatal(err)
-	}
-	req := &prompb.ReadRequest{Queries: []*prompb.Query{query}}
-	data, err := proto.Marshal(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	compressed := snappy.Encode(nil, data)
-	req := httptest.NewRequest("POST", "/expose", bytes.NewBuffer(compressed))
-
-	h := ReceiveMetrics(&mockOptions{})
-	h(context.Background(), wrt, req)
-
-	fmt.Println(wrt.Body.String())
-	assert.Equal(t, wrt.Code, 500)
-}
-
-func TestReceiveMetricsFailsWithStreamError(t *testing.T) {
-	wrt := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/expose", strings.NewReader(""))
-	ctx := NewContext(context.Background(), &mockStream{})
-
-	h := ReceiveMetrics(&mockOptions{publishResult: errors.New("Publish failed!")})
-	h(ctx, wrt, req)
-
-	fmt.Println(wrt.Body.String())
-	assert.Equal(t, wrt.Code, 503)
-}
-
 // =======
 
 func TestSendMetricsWithInvalidContext(t *testing.T) {
