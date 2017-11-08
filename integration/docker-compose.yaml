@@ -9,7 +9,7 @@ services:
       dockerfile: dockerfile.prometheus
     command: -log.format="logger:stdout" -config.file=/etc/prometheus/prometheus.yml
   bridge:
-    image: mobilityhouse/prometheus-bridge:edge
+    image: dnabic/prometheus-bridge:edge
     depends_on:
       - rabbitmq
     command: -amqp-uri amqp://rabbitmq:5672
