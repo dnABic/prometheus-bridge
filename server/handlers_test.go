@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,7 +48,25 @@ func TestReceiveMetricsStoresInStream(t *testing.T) {
 func TestReceiveMetricsFailsWithInvalidContext(t *testing.T) {
 	wrt := httptest.NewRecorder()
 	//req := httptest.NewRequest("POST", "/send", strings.NewReader(""))
-	req := httptest.NewRequest("POST", "/expose", nil)
+	matcher1, err := labels.NewMatcher(labels.MatchEqual, "__name__", "test_metric1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	matcher2, err := labels.NewMatcher(labels.MatchEqual, "d", "e")
+	if err != nil {
+		t.Fatal(err)
+	}
+	query, err := remote.ToQuery(0, 1, []*labels.Matcher{matcher1, matcher2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := &prompb.ReadRequest{Queries: []*prompb.Query{query}}
+	data, err := proto.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compressed := snappy.Encode(nil, data)
+	req := httptest.NewRequest("POST", "/expose", bytes.NewBuffer(compressed))
 
 	h := ReceiveMetrics(&mockOptions{})
 	h(context.Background(), wrt, req)
