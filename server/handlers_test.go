@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 )
