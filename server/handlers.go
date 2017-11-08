@@ -16,7 +16,7 @@ var collector = initializeMetrics()
 
 func ReceiveMetrics(o interface{}) ContextHandler {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		collector.HttpRequestCount.WithLabelValues("receive").Inc()
+		collector.HttpRequestCount.WithLabelValues("recieve").Inc()
 
 		compressed, err := ioutil.ReadAll(r.Body)
 		if err != nil {
