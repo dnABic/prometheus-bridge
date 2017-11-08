@@ -20,8 +20,9 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/relabel"
@@ -32,17 +33,6 @@ const (
 	namespace = "prometheus"
 	subsystem = "remote_storage"
 	queue     = "queue"
-
-	// With a maximum of 1000 shards, assuming an average of 100ms remote write
-	// time and 100 samples per batch, we will be able to push 1M samples/s.
-	defaultMaxShards         = 1000
-	defaultMaxSamplesPerSend = 100
-
-	// defaultQueueCapacity is per shard - at 1000 shards, this will buffer
-	// 100M samples.  It is configured to buffer 1000 batches, which at 100ms
-	// per batch is 1:40mins.
-	defaultQueueCapacity     = defaultMaxSamplesPerSend * 1000
-	defaultBatchSendDeadline = 5 * time.Second
 
 	// We track samples in/out and how long pushes take using an Exponentially
 	// Weighted Moving Average.
@@ -58,12 +48,12 @@ const (
 )
 
 var (
-	sentSamplesTotal = prometheus.NewCounterVec(
+	succeededSamplesTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      "sent_samples_total",
-			Help:      "Total number of processed samples sent to remote storage.",
+			Name:      "succeeded_samples_total",
+			Help:      "Total number of samples successfully sent to remote storage.",
 		},
 		[]string{queue},
 	)
@@ -72,7 +62,7 @@ var (
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "failed_samples_total",
-			Help:      "Total number of processed samples which failed on send to remote storage.",
+			Help:      "Total number of samples which failed on send to remote storage.",
 		},
 		[]string{queue},
 	)
@@ -125,13 +115,49 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(sentSamplesTotal)
+	prometheus.MustRegister(succeededSamplesTotal)
 	prometheus.MustRegister(failedSamplesTotal)
 	prometheus.MustRegister(droppedSamplesTotal)
 	prometheus.MustRegister(sentBatchDuration)
 	prometheus.MustRegister(queueLength)
 	prometheus.MustRegister(queueCapacity)
 	prometheus.MustRegister(numShards)
+}
+
+// QueueManagerConfig is the configuration for the queue used to write to remote
+// storage.
+type QueueManagerConfig struct {
+	// Number of samples to buffer per shard before we start dropping them.
+	QueueCapacity int
+	// Max number of shards, i.e. amount of concurrency.
+	MaxShards int
+	// Maximum number of samples per send.
+	MaxSamplesPerSend int
+	// Maximum time sample will wait in buffer.
+	BatchSendDeadline time.Duration
+	// Max number of times to retry a batch on recoverable errors.
+	MaxRetries int
+	// On recoverable errors, backoff exponentially.
+	MinBackoff time.Duration
+	MaxBackoff time.Duration
+}
+
+// defaultQueueManagerConfig is the default remote queue configuration.
+var defaultQueueManagerConfig = QueueManagerConfig{
+	// With a maximum of 1000 shards, assuming an average of 100ms remote write
+	// time and 100 samples per batch, we will be able to push 1M samples/s.
+	MaxShards:         1000,
+	MaxSamplesPerSend: 100,
+
+	// By default, buffer 1000 batches, which at 100ms per batch is 1:40mins. At
+	// 1000 shards, this will buffer 100M samples total.
+	QueueCapacity:     100 * 1000,
+	BatchSendDeadline: 5 * time.Second,
+
+	// Max number of times to retry a batch on recoverable errors.
+	MaxRetries: 10,
+	MinBackoff: 30 * time.Millisecond,
+	MaxBackoff: 100 * time.Millisecond,
 }
 
 // StorageClient defines an interface for sending a batch of samples to an
@@ -143,23 +169,17 @@ type StorageClient interface {
 	Name() string
 }
 
-// QueueManagerConfig configures a storage queue.
-type QueueManagerConfig struct {
-	QueueCapacity     int           // Number of samples to buffer per shard before we start dropping them.
-	MaxShards         int           // Max number of shards, i.e. amount of concurrency.
-	MaxSamplesPerSend int           // Maximum number of samples per send.
-	BatchSendDeadline time.Duration // Maximum time sample will wait in buffer.
-	ExternalLabels    model.LabelSet
-	RelabelConfigs    []*config.RelabelConfig
-	Client            StorageClient
-}
-
 // QueueManager manages a queue of samples to be sent to the Storage
 // indicated by the provided StorageClient.
 type QueueManager struct {
-	cfg        QueueManagerConfig
-	queueName  string
-	logLimiter *rate.Limiter
+	logger log.Logger
+
+	cfg            QueueManagerConfig
+	externalLabels model.LabelSet
+	relabelConfigs []*config.RelabelConfig
+	client         StorageClient
+	queueName      string
+	logLimiter     *rate.Limiter
 
 	shardsMtx   sync.Mutex
 	shards      *shards
@@ -168,28 +188,23 @@ type QueueManager struct {
 	quit        chan struct{}
 	wg          sync.WaitGroup
 
-	samplesIn, samplesOut, samplesOutDuration ewmaRate
+	samplesIn, samplesOut, samplesOutDuration *ewmaRate
 	integralAccumulator                       float64
 }
 
 // NewQueueManager builds a new QueueManager.
-func NewQueueManager(cfg QueueManagerConfig) *QueueManager {
-	if cfg.QueueCapacity == 0 {
-		cfg.QueueCapacity = defaultQueueCapacity
+func NewQueueManager(logger log.Logger, cfg QueueManagerConfig, externalLabels model.LabelSet, relabelConfigs []*config.RelabelConfig, client StorageClient) *QueueManager {
+	if logger == nil {
+		logger = log.NewNopLogger()
 	}
-	if cfg.MaxShards == 0 {
-		cfg.MaxShards = defaultMaxShards
-	}
-	if cfg.MaxSamplesPerSend == 0 {
-		cfg.MaxSamplesPerSend = defaultMaxSamplesPerSend
-	}
-	if cfg.BatchSendDeadline == 0 {
-		cfg.BatchSendDeadline = defaultBatchSendDeadline
-	}
-
 	t := &QueueManager{
-		cfg:         cfg,
-		queueName:   cfg.Client.Name(),
+		logger:         logger,
+		cfg:            cfg,
+		externalLabels: externalLabels,
+		relabelConfigs: relabelConfigs,
+		client:         client,
+		queueName:      client.Name(),
+
 		logLimiter:  rate.NewLimiter(logRateLimit, logBurst),
 		numShards:   1,
 		reshardChan: make(chan int),
@@ -214,14 +229,14 @@ func (t *QueueManager) Append(s *model.Sample) error {
 	snew = *s
 	snew.Metric = s.Metric.Clone()
 
-	for ln, lv := range t.cfg.ExternalLabels {
+	for ln, lv := range t.externalLabels {
 		if _, ok := s.Metric[ln]; !ok {
 			snew.Metric[ln] = lv
 		}
 	}
 
 	snew.Metric = model.Metric(
-		relabel.Process(model.LabelSet(snew.Metric), t.cfg.RelabelConfigs...))
+		relabel.Process(model.LabelSet(snew.Metric), t.relabelConfigs...))
 
 	if snew.Metric == nil {
 		return nil
@@ -236,7 +251,7 @@ func (t *QueueManager) Append(s *model.Sample) error {
 	} else {
 		droppedSamplesTotal.WithLabelValues(t.queueName).Inc()
 		if t.logLimiter.Allow() {
-			log.Warn("Remote storage queue full, discarding sample. Multiple subsequent messages of this kind may be suppressed.")
+			level.Warn(t.logger).Log("msg", "Remote storage queue full, discarding sample. Multiple subsequent messages of this kind may be suppressed.")
 		}
 	}
 	return nil
@@ -264,23 +279,25 @@ func (t *QueueManager) Start() {
 // Stop stops sending samples to the remote storage and waits for pending
 // sends to complete.
 func (t *QueueManager) Stop() {
-	log.Infof("Stopping remote storage...")
+	level.Info(t.logger).Log("msg", "Stopping remote storage...")
 	close(t.quit)
 	t.wg.Wait()
 
 	t.shardsMtx.Lock()
 	defer t.shardsMtx.Unlock()
 	t.shards.stop()
-	log.Info("Remote storage stopped.")
+
+	level.Info(t.logger).Log("msg", "Remote storage stopped.")
 }
 
 func (t *QueueManager) updateShardsLoop() {
 	defer t.wg.Done()
 
-	ticker := time.Tick(shardUpdateDuration)
+	ticker := time.NewTicker(shardUpdateDuration)
+	defer ticker.Stop()
 	for {
 		select {
-		case <-ticker:
+		case <-ticker.C:
 			t.calculateDesiredShards()
 		case <-t.quit:
 			return
@@ -315,15 +332,17 @@ func (t *QueueManager) calculateDesiredShards() {
 		timePerSample = samplesOutDuration / samplesOut
 		desiredShards = (timePerSample * (samplesIn + samplesPending + t.integralAccumulator)) / float64(time.Second)
 	)
-	log.Debugf("QueueManager.caclulateDesiredShards samplesIn=%f, samplesOut=%f, samplesPending=%f, desiredShards=%f",
-		samplesIn, samplesOut, samplesPending, desiredShards)
+	level.Debug(t.logger).Log("msg", "QueueManager.caclulateDesiredShards",
+		"samplesIn", samplesIn, "samplesOut", samplesOut,
+		"samplesPending", samplesPending, "desiredShards", desiredShards)
 
 	// Changes in the number of shards must be greater than shardToleranceFraction.
 	var (
 		lowerBound = float64(t.numShards) * (1. - shardToleranceFraction)
 		upperBound = float64(t.numShards) * (1. + shardToleranceFraction)
 	)
-	log.Debugf("QueueManager.updateShardsLoop %f <= %f <= %f", lowerBound, desiredShards, upperBound)
+	level.Debug(t.logger).Log("msg", "QueueManager.updateShardsLoop",
+		"lowerBound", lowerBound, "desiredShards", desiredShards, "upperBound", upperBound)
 	if lowerBound <= desiredShards && desiredShards <= upperBound {
 		return
 	}
@@ -331,6 +350,8 @@ func (t *QueueManager) calculateDesiredShards() {
 	numShards := int(math.Ceil(desiredShards))
 	if numShards > t.cfg.MaxShards {
 		numShards = t.cfg.MaxShards
+	} else if numShards < 1 {
+		numShards = 1
 	}
 	if numShards == t.numShards {
 		return
@@ -340,10 +361,10 @@ func (t *QueueManager) calculateDesiredShards() {
 	// to stay close to shardUpdateDuration.
 	select {
 	case t.reshardChan <- numShards:
-		log.Infof("Remote storage resharding from %d to %d shards.", t.numShards, numShards)
+		level.Info(t.logger).Log("msg", "Remote storage resharding", "from", t.numShards, "to", numShards)
 		t.numShards = numShards
 	default:
-		log.Infof("Currently resharding, skipping.")
+		level.Info(t.logger).Log("msg", "Currently resharding, skipping.")
 	}
 }
 
@@ -443,9 +464,9 @@ func (s *shards) runShard(i int) {
 		case sample, ok := <-queue:
 			if !ok {
 				if len(pendingSamples) > 0 {
-					log.Debugf("Flushing %d samples to remote storage...", len(pendingSamples))
+					level.Debug(s.qm.logger).Log("msg", "Flushing samples to remote storage...", "count", len(pendingSamples))
 					s.sendSamples(pendingSamples)
-					log.Debugf("Done flushing.")
+					level.Debug(s.qm.logger).Log("msg", "Done flushing.")
 				}
 				return
 			}
@@ -467,21 +488,38 @@ func (s *shards) runShard(i int) {
 }
 
 func (s *shards) sendSamples(samples model.Samples) {
-	// Samples are sent to the remote storage on a best-effort basis. If a
-	// sample isn't sent correctly the first time, it's simply dropped on the
-	// floor.
 	begin := time.Now()
-	err := s.qm.cfg.Client.Store(samples)
-	duration := time.Since(begin)
+	s.sendSamplesWithBackoff(samples)
 
-	if err != nil {
-		log.Warnf("error sending %d samples to remote storage: %s", len(samples), err)
-		failedSamplesTotal.WithLabelValues(s.qm.queueName).Add(float64(len(samples)))
-	} else {
-		sentSamplesTotal.WithLabelValues(s.qm.queueName).Add(float64(len(samples)))
-	}
-	sentBatchDuration.WithLabelValues(s.qm.queueName).Observe(duration.Seconds())
-
+	// These counters are used to caclulate the dynamic sharding, and as such
+	// should be maintained irrespective of success or failure.
 	s.qm.samplesOut.incr(int64(len(samples)))
-	s.qm.samplesOutDuration.incr(int64(duration))
+	s.qm.samplesOutDuration.incr(int64(time.Since(begin)))
+}
+
+// sendSamples to the remote storage with backoff for recoverable errors.
+func (s *shards) sendSamplesWithBackoff(samples model.Samples) {
+	backoff := s.qm.cfg.MinBackoff
+	for retries := s.qm.cfg.MaxRetries; retries > 0; retries-- {
+		begin := time.Now()
+		err := s.qm.client.Store(samples)
+
+		sentBatchDuration.WithLabelValues(s.qm.queueName).Observe(time.Since(begin).Seconds())
+		if err == nil {
+			succeededSamplesTotal.WithLabelValues(s.qm.queueName).Add(float64(len(samples)))
+			return
+		}
+
+		level.Warn(s.qm.logger).Log("msg", "Error sending samples to remote storage", "count", len(samples), "err", err)
+		if _, ok := err.(recoverableError); !ok {
+			break
+		}
+		time.Sleep(backoff)
+		backoff = backoff * 2
+		if backoff > s.qm.cfg.MaxBackoff {
+			backoff = s.qm.cfg.MaxBackoff
+		}
+	}
+
+	failedSamplesTotal.WithLabelValues(s.qm.queueName).Add(float64(len(samples)))
 }

@@ -14,6 +14,7 @@
 package ec2
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strings"
@@ -21,11 +22,14 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/model"
-	"golang.org/x/net/context"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/prometheus/prometheus/config"
@@ -71,14 +75,19 @@ type Discovery struct {
 	aws      *aws.Config
 	interval time.Duration
 	profile  string
+	roleARN  string
 	port     int
+	logger   log.Logger
 }
 
 // NewDiscovery returns a new EC2Discovery which periodically refreshes its targets.
-func NewDiscovery(conf *config.EC2SDConfig) *Discovery {
-	creds := credentials.NewStaticCredentials(conf.AccessKey, conf.SecretKey, "")
+func NewDiscovery(conf *config.EC2SDConfig, logger log.Logger) *Discovery {
+	creds := credentials.NewStaticCredentials(conf.AccessKey, string(conf.SecretKey), "")
 	if conf.AccessKey == "" && conf.SecretKey == "" {
 		creds = nil
+	}
+	if logger == nil {
+		logger = log.NewNopLogger()
 	}
 	return &Discovery{
 		aws: &aws.Config{
@@ -86,8 +95,10 @@ func NewDiscovery(conf *config.EC2SDConfig) *Discovery {
 			Credentials: creds,
 		},
 		profile:  conf.Profile,
+		roleARN:  conf.RoleARN,
 		interval: time.Duration(conf.RefreshInterval),
 		port:     conf.Port,
+		logger:   logger,
 	}
 }
 
@@ -99,7 +110,7 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*config.TargetGroup) {
 	// Get an initial set right away.
 	tg, err := d.refresh()
 	if err != nil {
-		log.Error(err)
+		level.Error(d.logger).Log("msg", "Refresh failed", "err", err)
 	} else {
 		select {
 		case ch <- []*config.TargetGroup{tg}:
@@ -113,7 +124,7 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*config.TargetGroup) {
 		case <-ticker.C:
 			tg, err := d.refresh()
 			if err != nil {
-				log.Error(err)
+				level.Error(d.logger).Log("msg", "Refresh failed", "err", err)
 				continue
 			}
 
@@ -126,6 +137,16 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*config.TargetGroup) {
 			return
 		}
 	}
+}
+
+func (d *Discovery) ec2MetadataAvailable(sess *session.Session) (isAvailable bool) {
+	svc := ec2metadata.New(sess, &aws.Config{
+		MaxRetries: aws.Int(0),
+	})
+
+	isAvailable = svc.Available()
+
+	return isAvailable
 }
 
 func (d *Discovery) refresh() (tg *config.TargetGroup, err error) {
@@ -145,7 +166,18 @@ func (d *Discovery) refresh() (tg *config.TargetGroup, err error) {
 		return nil, fmt.Errorf("could not create aws session: %s", err)
 	}
 
-	ec2s := ec2.New(sess)
+	var ec2s *ec2.EC2
+	if d.roleARN != "" {
+		creds := stscreds.NewCredentials(sess, d.roleARN)
+		ec2s = ec2.New(sess, &aws.Config{Credentials: creds})
+	} else {
+		if d.aws.Credentials == nil && d.ec2MetadataAvailable(sess) {
+			creds := ec2rolecreds.NewCredentials(sess)
+			ec2s = ec2.New(sess, &aws.Config{Credentials: creds})
+		} else {
+			ec2s = ec2.New(sess)
+		}
+	}
 	tg = &config.TargetGroup{
 		Source: *d.aws.Region,
 	}

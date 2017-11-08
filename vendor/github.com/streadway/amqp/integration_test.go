@@ -39,8 +39,24 @@ func TestIntegrationOpenCloseChannel(t *testing.T) {
 	if c := integrationConnection(t, "channel"); c != nil {
 		defer c.Close()
 
-		if _, err := c.Channel(); err != nil {
-			t.Errorf("Channel could not be opened: %s", err)
+		ch, err := c.Channel()
+		if err != nil {
+			t.Fatalf("create channel 1: %s", err)
+		}
+		ch.Close()
+	}
+}
+
+func TestIntegrationHighChannelChurnInTightLoop(t *testing.T) {
+	if c := integrationConnection(t, "channel churn"); c != nil {
+		defer c.Close()
+
+		for i := 0; i < 1000; i++ {
+			ch, err := c.Channel()
+			if err != nil {
+				t.Fatalf("create channel 1: %s", err)
+			}
+			ch.Close()
 		}
 	}
 }
@@ -133,7 +149,7 @@ func TestIntegrationExchangeDeclarePassiveOnDeclaredShouldNotError(t *testing.T)
 	if c != nil {
 		defer c.Close()
 
-		exchange := "test-integration-decalred-passive-exchange"
+		exchange := "test-integration-declared-passive-exchange"
 
 		ch, err := c.Channel()
 		if err != nil {
@@ -563,7 +579,7 @@ func TestIntegrationNonBlockingClose(t *testing.T) {
 
 		// Simulate a consumer
 		go func() {
-			for _ = range msgs {
+			for range msgs {
 				t.Logf("Oh my, received message on an empty queue")
 			}
 		}()
@@ -1732,6 +1748,34 @@ func TestConsumerCancelNotification(t *testing.T) {
 	}
 }
 
+func TestConcurrentChannelAndConnectionClose(t *testing.T) {
+	c := integrationConnection(t, "concurrent channel and connection test")
+	if c != nil {
+		ch, err := c.Channel()
+		if err != nil {
+			t.Fatalf("got error on channel.open: %v", err)
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		starter := make(chan struct{})
+		go func() {
+			defer wg.Done()
+			<-starter
+			c.Close()
+		}()
+
+		go func() {
+			defer wg.Done()
+			<-starter
+			ch.Close()
+		}()
+		close(starter)
+		wg.Wait()
+	}
+}
+
 /*
  * Support for integration tests
  */
@@ -1762,7 +1806,7 @@ func integrationConnection(t *testing.T, name string) *Connection {
 	return loggedConnection(t, conn, name)
 }
 
-// Returns a connection, channel and delcares a queue when the AMQP_URL is in the environment
+// Returns a connection, channel and declares a queue when the AMQP_URL is in the environment
 func integrationQueue(t *testing.T, name string) (*Connection, *Channel) {
 	if conn := integrationConnection(t, name); conn != nil {
 		if channel, err := conn.Channel(); err == nil {
