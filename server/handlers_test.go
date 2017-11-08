@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/prometheus/storage/remote"
+	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -96,7 +96,7 @@ func TestSendMetricsSuccess(t *testing.T) {
 	req := httptest.NewRequest("POST", "/metrics", strings.NewReader(""))
 	ctx := NewContext(context.Background(), &mockStream{})
 
-	ts := remote.WriteRequest{
+	ts := prompb.WriteRequest{
 		Timeseries: []*remote.TimeSeries{
 			&remote.TimeSeries{},
 		},
@@ -115,7 +115,7 @@ func TestSendMetricsConstructsValidResponse(t *testing.T) {
 	req := httptest.NewRequest("POST", "/metrics", strings.NewReader(""))
 	ctx := NewContext(context.Background(), &mockStream{})
 
-	ts := remote.WriteRequest{
+	ts := prompb.WriteRequest{
 		Timeseries: []*remote.TimeSeries{
 			&remote.TimeSeries{
 				Labels: []*remote.LabelPair{
