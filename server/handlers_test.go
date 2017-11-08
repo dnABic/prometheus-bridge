@@ -36,7 +36,6 @@ func (s *mockStream) Consume(opts interface{}) ([][]byte, error) {
 func TestReceiveMetricsStoresInStream(t *testing.T) {
 	ctx := NewContext(context.Background(), &mockStream{})
 	wrt := httptest.NewRecorder()
-	//buf := make([]byte, 8192)
 	str := "test"
 	compressed := snappy.Encode(nil, []byte(str))
 	req := httptest.NewRequest("POST", "/send", bytes.NewBuffer(compressed))
@@ -46,6 +45,33 @@ func TestReceiveMetricsStoresInStream(t *testing.T) {
 
 	fmt.Println(wrt.Body.String())
 	assert.Equal(t, wrt.Code, 200)
+}
+
+func TestReceiveMetricsFailsWithInvalidContext(t *testing.T) {
+	wrt := httptest.NewRecorder()
+	str := "test"
+	compressed := snappy.Encode(nil, []byte(str))
+	req := httptest.NewRequest("POST", "/send", bytes.NewBuffer(compressed))
+
+	h := ReceiveMetrics(&mockOptions{})
+	h(context.Background(), wrt, req)
+
+	fmt.Println(wrt.Body.String())
+	assert.Equal(t, wrt.Code, 500)
+}
+
+func TestReceiveMetricsFailsWithStreamError(t *testing.T) {
+	wrt := httptest.NewRecorder()
+	str := "test"
+	compressed := snappy.Encode(nil, []byte(str))
+	req := httptest.NewRequest("POST", "/send", bytes.NewBuffer(compressed))
+	ctx := NewContext(context.Background(), &mockStream{})
+
+	h := ReceiveMetrics(&mockOptions{publishResult: errors.New("Publish failed!")})
+	h(ctx, wrt, req)
+
+	fmt.Println(wrt.Body.String())
+	assert.Equal(t, wrt.Code, 503)
 }
 
 // =======
