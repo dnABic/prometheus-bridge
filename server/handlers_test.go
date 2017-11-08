@@ -118,11 +118,11 @@ func TestSendMetricsConstructsValidResponse(t *testing.T) {
 	ts := prompb.WriteRequest{
 		Timeseries: []*prompb.TimeSeries{
 			&prompb.TimeSeries{
-				Labels: []*prompb.LabelPair{
+				Labels: []*prompb.Label{
 					{Name: "test", Value: "test"},
 				},
 				Samples: []*prompb.Sample{
-					{Value: 10, TimestampMs: 1111111111},
+					{Value: 10, Timestamp: 1111111111},
 				},
 			},
 		},
