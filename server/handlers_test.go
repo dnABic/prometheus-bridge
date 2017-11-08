@@ -97,8 +97,8 @@ func TestSendMetricsSuccess(t *testing.T) {
 	ctx := NewContext(context.Background(), &mockStream{})
 
 	ts := prompb.WriteRequest{
-		Timeseries: []*remote.TimeSeries{
-			&remote.TimeSeries{},
+		Timeseries: []*prompb.TimeSeries{
+			&prompb.TimeSeries{},
 		},
 	}
 	result, _ := proto.Marshal(&ts)
@@ -116,12 +116,12 @@ func TestSendMetricsConstructsValidResponse(t *testing.T) {
 	ctx := NewContext(context.Background(), &mockStream{})
 
 	ts := prompb.WriteRequest{
-		Timeseries: []*remote.TimeSeries{
-			&remote.TimeSeries{
-				Labels: []*remote.LabelPair{
+		Timeseries: []*prompb.TimeSeries{
+			&prompb.TimeSeries{
+				Labels: []*prompb.LabelPair{
 					{Name: "test", Value: "test"},
 				},
-				Samples: []*remote.Sample{
+				Samples: []*prompb.Sample{
 					{Value: 10, TimestampMs: 1111111111},
 				},
 			},
