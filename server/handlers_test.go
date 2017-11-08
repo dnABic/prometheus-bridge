@@ -34,7 +34,7 @@ func (s *mockStream) Consume(opts interface{}) ([][]byte, error) {
 func TestReceiveMetricsStoresInStream(t *testing.T) {
 	ctx := NewContext(context.Background(), &mockStream{})
 	wrt := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/send", strings.NewReader(""))
+	req := httptest.NewRequest("POST", "/expose", nil)
 
 	h := ReceiveMetrics(&mockOptions{})
 	h(ctx, wrt, req)
@@ -45,7 +45,8 @@ func TestReceiveMetricsStoresInStream(t *testing.T) {
 
 func TestReceiveMetricsFailsWithInvalidContext(t *testing.T) {
 	wrt := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/send", strings.NewReader(""))
+	//req := httptest.NewRequest("POST", "/send", strings.NewReader(""))
+	req := httptest.NewRequest("POST", "/expose", nil)
 
 	h := ReceiveMetrics(&mockOptions{})
 	h(context.Background(), wrt, req)
@@ -56,7 +57,7 @@ func TestReceiveMetricsFailsWithInvalidContext(t *testing.T) {
 
 func TestReceiveMetricsFailsWithStreamError(t *testing.T) {
 	wrt := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/send", strings.NewReader(""))
+	req := httptest.NewRequest("POST", "/expose", strings.NewReader(""))
 	ctx := NewContext(context.Background(), &mockStream{})
 
 	h := ReceiveMetrics(&mockOptions{publishResult: errors.New("Publish failed!")})
